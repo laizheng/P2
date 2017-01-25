@@ -9,7 +9,15 @@ def main():
     test_folder = "./test/"
     if not os.path.isdir(train_folder):
         os.mkdir(train_folder)
+    else:
+        print("removing {}".format(train_folder))
+        shutil.rmtree(train_folder)
+        os.mkdir(train_folder)
     if not os.path.isdir(test_folder):
+        os.mkdir(test_folder)
+    else:
+        print("removing {}".format(test_folder))
+        shutil.rmtree(test_folder)
         os.mkdir(test_folder)
     training_file = "./train.p"
     testing_file = "./test.p"

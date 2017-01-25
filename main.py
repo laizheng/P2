@@ -12,8 +12,8 @@ from classifer import CNN
 
 def main():
     cnn = CNN()
-    cnn.preprocess()
-
+    cnn.train(epochs=1,batch_size=32)
+    pass
 if __name__ == "__main__":
     main()
 

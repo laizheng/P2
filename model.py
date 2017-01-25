@@ -166,10 +166,11 @@ class Model():
                                  num_inputs=128,
                                  num_outputs=self.num_classes,
                                  use_relu=True)
-        self.Y_pred = tf.nn.softmax(self.layer_fc2)
+        self.numeric_stable_out = self.layer_fc2-tf.reshape(tf.reduce_max(self.layer_fc2,axis=1), [-1,1])
+        self.Y_pred = tf.nn.softmax(self.numeric_stable_out)
         self.y_pred = tf.argmax(self.Y_pred, dimension=1)
         #Todo
-        self.cross_entropy = -tf.reduce_sum(self.Y_true * tf.log(tf.clip_by_value(self.Y_pred, 1e-10, 1)), reduction_indices=1)
+        self.cross_entropy = -tf.reduce_sum(self.Y_true * tf.log(self.Y_pred), reduction_indices=1)
         self.cost = tf.reduce_mean(self.cross_entropy)
         self.correct_prediction = tf.equal(self.y_pred, self.y_true)
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))

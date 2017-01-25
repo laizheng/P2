@@ -6,14 +6,38 @@ import tensorflow as tf
 import matplotlib.gridspec as gridspec
 import csv
 import random
+import os
+import shutil
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.cross_validation import train_test_split
+import pandas as pd
+from model import Model
+from tqdm import tqdm
+from sklearn.utils import shuffle
+from time import localtime, strftime
 
 class CNN():
     def __init__(self):
-        self.labelDict = self.readLabelFromFile()
+        self.use_jitter = False
         self.img_rows, self.img_cols = 32, 32
         self.nb_classes = 43
+        self.samplesPerTrack = {}
+        self.X_train_paths, self.X_val_paths, self.y_train, self.y_val = [], [], [], []
+        self.labelDict = self.readLabelFromFile()
+        self.df_train = pd.read_csv("./train_data.csv", sep=",\s*", engine='python')
+        self.df_jitter = pd.read_csv("./jitter_data.csv", sep=",\s*", engine='python')
+        self.df_test = pd.read_csv("./test_data.csv", sep=",\s*",engine='python')
+        self.X_test_paths = list(self.df_test['path'])
+        self.y_test = list(self.df_test['y'])
+        self.encoder = LabelBinarizer()
+        self.encoder.fit(list(self.df_train["y"]))
+        self.cat()
+        self.split()
+        self.model = Model()
+
+    def decode(encoder, label, labelDict):
+        id = encoder.inverse_transform(np.array([label]))
+        return id, labelDict[str(id[0])]
 
     def readLabelFromFile(self):
         labelDict = {}
@@ -23,142 +47,124 @@ class CNN():
                 labelDict[row[0]] = row[1]
         return labelDict
 
-    def grayscale(self, img):
-        return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    def cat(self):
+        print("Categorizing...")
+        tracks = self.df_train['y'].unique() # a list of unique tracks
+        self.samplesPerTrack = {}
+        for track in tracks:
+            self.samplesPerTrack[track] = []
+            self.samplesPerTrack[track].extend(list(self.df_train[self.df_train['y'] == track]['path']))
+        if self.use_jitter:
+            for track in tracks:
+                self.samplesPerTrack[track].extend(list(self.df_jitter[self.df_jitter['y'] == track]['path']))
+        print("Categorization completes.")
 
-    def transform_image(img, ang_range, shear_range, trans_range):
-        '''
-        This function transforms images to generate new images.
-        The function takes in following arguments,
-        1- Image
-        2- ang_range: Range of angles for rotation
-        3- shear_range: Range of values to apply affine transform to
-        4- trans_range: Range of values to apply translations over.
-        A Random uniform distribution is used to generate different parameters for transformation
-        '''
-        # Rotation
-        ang_rot = np.random.uniform(ang_range) - ang_range / 2
-        rows = img.shape[0]
-        cols = img.shape[1]
-        Rot_M = cv2.getRotationMatrix2D((cols / 2, rows / 2), ang_rot, 1)
-
-        # Translation
-        tr_x = trans_range * np.random.uniform() - trans_range / 2
-        tr_y = trans_range * np.random.uniform() - trans_range / 2
-        Trans_M = np.float32([[1, 0, tr_x], [0, 1, tr_y]])
-
-        # Shear
-        pts1 = np.float32([[5, 5], [20, 5], [5, 20]])
-        pt1 = 5 + shear_range * np.random.uniform() - shear_range / 2
-        pt2 = 20 + shear_range * np.random.uniform() - shear_range / 2
-        pts2 = np.float32([[pt1, 5], [pt2, pt1], [5, pt2]])
-        shear_M = cv2.getAffineTransform(pts1, pts2)
-
-        img = cv2.warpAffine(img, Rot_M, (cols, rows))
-        img = cv2.warpAffine(img, Trans_M, (cols, rows))
-        img = cv2.warpAffine(img, shear_M, (cols, rows))
-
-        if (len(img.shape) == 2):
-            img = img.reshape(img.shape[0], img.shape[1], 1)
-        elif (len(img.shape) == 3):
-            pass
-        else:
-            raise ValueError("Not Supported image shape!")
-        return img
-
-    def cat(self, X, y):
+    def imgPreprocess(self,x):
         """
-        Return a list instead of numpy array!
+        :param x: one single image
+        :return:
         """
-        samplesPerTrack = {}
-        for i in range(X.shape[0]):
-            if (not y[i] in samplesPerTrack.keys()):
-                samplesPerTrack[y[i]] = []
-                samplesPerTrack[y[i]].append(X[i])
+        gray = cv2.cvtColor(x, cv2.COLOR_BGR2GRAY)
+        gray = gray.astype('float64')
+        gray -= 128
+        gray /= 255
+        return gray
+
+    def split(self):
+        print("Splitting...")
+        for track in self.samplesPerTrack.keys():
+            paths = self.samplesPerTrack[track]
+            labels = [track for i in range(len(paths))]
+            paths_train, paths_val, labels_train, labels_val = train_test_split(paths, labels, test_size=0.2,random_state=42)
+            self.X_train_paths.extend(paths_train)
+            self.X_val_paths.extend(paths_val)
+            self.y_train.extend(labels_train)
+            self.y_val.extend(labels_val)
+        print("Splitting completes.")
+
+    def generate_from_directory(self, X_paths, y, batch_size=32):
+        """
+        :param X_path: paths to stored images (list)
+        :param y: target angles
+        :return: image in the form of numpy arrays; target values in the form of np.array
+        """
+        assert len(X_paths) == len(y)
+        Y = self.encoder.transform(y)
+        numOfBatches = int(Y.shape[0] / batch_size)
+        start_index = 0
+        while 1:
+            if start_index + batch_size <= len(X_paths):
+                X = []
+                for j in range(batch_size):
+                    x = cv2.imread(X_paths[j])
+                    x = self.imgPreprocess(x)
+                    X.append(x)
+                X = np.array(X)
+                yield (X, Y[start_index: start_index + batch_size,:])
+                start_index = start_index + batch_size
             else:
-                samplesPerTrack[y[i]].append(X[i])
-        return samplesPerTrack
+                X = []
+                for j in range(len(X_paths) - start_index):
+                    x = cv2.imread(X_paths[j])
+                    x = self.imgPreprocess(x)
+                    X.append(x)
+                X = np.array(X)
+                yield (X, Y[start_index: len(X_paths),:])
+                start_index = 0
 
-    def GrayNormResize(self,X):
-        X_ret = np.zeros((X.shape[0], X.shape[1], X.shape[2]))
-        for i in range(X.shape[0]):
-            X_ret[i] = self.grayscale(X[i])
-        X_ret = X_ret.astype('float64')
-        X_ret -= 128
-        X_ret /= 255
-        X_ret1 = np.reshape(X_ret, (X_ret.shape[0], X_ret.shape[1], X_ret.shape[2], 1))
-        return X_ret1
+    def getValAccuracy(self,sess):
+        acc = []
+        for X, Y in self.generate_from_directory(self.X_val_paths,self.y_val,batch_size=32):
+            acc.append(sess.run(self.model.accuracy))
+        return np.mean(acc)
 
-    def jitter(self, X, y, jitter_ratio=2):
-        """
-        Take X, y as numpy array and return numpy arrays X_ret, y_ret
-        """
-        sampleBasedOnTrack = cat(X, y)
-        # Find Max Freq
-        max_freq = 0
-        for i in sampleBasedOnTrack.keys():
-            if max_freq < len(sampleBasedOnTrack[i]):
-                max_freq = len(sampleBasedOnTrack[i])
-        print("max_freq = " + str(max_freq))
-        for i in sampleBasedOnTrack.keys():
-            count = len(sampleBasedOnTrack[i])
-            if count < max_freq * jitter_ratio:
-                numToInsert = int(max_freq * jitter_ratio - count)
-                for j in range(numToInsert):
-                    transformed = transform_image(random.choice(sampleBasedOnTrack[i]), 10, 4, 4)
-                    sampleBasedOnTrack[i].append(transformed)
-        for i in sampleBasedOnTrack.keys():
-            # print("sampleBasedOnTrack [{}] len".format(i)+str(len(sampleBasedOnTrack[i])))
-            # print("sampleBasedOnTrack[0][0].shape:"+str(sampleBasedOnTrack[0][0].shape))
-            sampleBasedOnTrack[i] = np.array(sampleBasedOnTrack[i])
-        X_ret = []
-        y_ret = []
-        for i in sampleBasedOnTrack.keys():
-            data = sampleBasedOnTrack[i]
-            X_ret.extend(data)
-            y_ret.extend([i for j in range(len(data))])
-        X_ret = np.array(X_ret)
-        y_ret = np.array(y_ret)
-        return X_ret, y_ret
+    def getTestAccuracy(self,sess):
+        acc = []
+        for X, Y in self.generate_from_directory(self.X_test_paths,self.y_test,batch_size=32):
+            acc.append(sess.run(self.model.accuracy))
+        return np.mean(acc)
 
-    def split(self, X_train, y_train):
-        samplesPerTrack = self.cat(X_train, y_train)
-        X_train_split = []
-        X_val_split = []
-        y_train_split = []
-        y_val_split = []
-        for track in samplesPerTrack.keys():
-            data = samplesPerTrack[track]
-            labels = [track for i in range(len(data))]
-            data_train, data_val, labels_train, labels_val = train_test_split(data, labels, test_size=0.2,
-                                                                              random_state=42)
-            X_train_split.extend(data_train)
-            X_val_split.extend(data_val)
-            y_train_split.extend(labels_train)
-            y_val_split.extend(labels_val)
-        X_train_split = np.array(X_train_split)
-        X_val_split = np.array(X_val_split)
-        y_train_split = np.array(y_train_split)
-        y_val_split = np.array(y_val_split)
-        return X_train_split, y_train_split, X_val_split, y_val_split
+    def train(self,epochs,batch_size):
+        sess = tf.Session()
+        sess.run(tf.global_variables_initializer())
+        saver = tf.train.Saver()
+        log_batch_step = 10
+        batch_num = []
+        cost_batch = []
+        val_acc_epoch = []
+        test_acc_epoch = []
+        print("Training Begin...")
+        for epoch_i in range(epochs):
+            self.X_train_paths, self.y_train = shuffle(self.X_train_paths,self.y_train)
+            gen = self.generate_from_directory(self.X_train_paths, self.y_train, batch_size=batch_size)
+            batch_count = int(len(self.X_train_paths)/batch_size) + 1
+            batches_pbar = range(batch_count)
+            batches_pbar = tqdm(range(batch_count), desc='Epoch {:>2}/{}'.format(epoch_i + 1, epochs))
+            for batch_cnt in batches_pbar:
+                X, Y = next(gen)
+                # Run optimizer and get loss
+                _, l = sess.run(
+                    [self.model.optimizer, self.model.cost],
+                    feed_dict={self.model.X:X, self.model.Y_true:Y})
+                # Log every 50 batches
+                if not batch_cnt % log_batch_step:
+                    previous_batch = batch_num[-1] if batch_num else 0
+                    batch_num.append(log_batch_step + previous_batch)
+                    cost_batch.append(l)
+            valAcc = self.getValAccuracy(sess=sess)
+            testAcc = self.getTestAccuracy(sess=sess)
+            val_acc_epoch.append(valAcc)
+            test_acc_epoch.append(testAcc)
+            print("epoch {}, valAcc={},testAcc={}".format(epoch_i,valAcc,testAcc))
+        save_path = saver.save(sess, "./model-"+strftime("%Y-%m-%d-%H-%M-%S", localtime()))
+        print("Model saved in file: %s" % save_path)
 
-    def readData(self):
-        training_file = "./train.p"
-        testing_file = "./test.p"
-        with open(training_file, mode='rb') as f:
-            train = pickle.load(f)
-        with open(testing_file, mode='rb') as f:
-            test = pickle.load(f)
-        X_train, y_train = train['features'], train['labels']
-        X_test, y_test = test['features'], test['labels']
-        assert (X_train.shape[0] == y_train.shape[
-            0]), "number of images!=number of labels."
-        assert (X_train.shape[1:] == (32, 32, 3)), "Image dimention must be 32 x 32 x 3."
-        encoder = LabelBinarizer()
-        encoder.fit(y_train)
-        return X_train, y_train, X_test, y_test, encoder
-
-
-    def preprocess(self):
-        X_train, y_train, X_test, y_test, encoder = self.readData()
-        self.split(X_train, y_train)
+    def debug_tf(self):
+        gen = self.generate_from_directory(self.X_train_paths, self.y_train, batch_size=4)
+        X, Y = next(gen)
+        sess = tf.Session()
+        sess.run(tf.global_variables_initializer())
+        temp = self.model.Y_true * tf.log(tf.clip_by_value(self.model.Y_pred, 1e-10, 1))
+        Y_true, Y_pred, cross_entropy, temp= sess.run([self.model.Y_true,self.model.Y_pred,self.model.cross_entropy,temp],\
+                                                feed_dict={self.model.X:X, self.model.Y_true:Y})
+        pass
