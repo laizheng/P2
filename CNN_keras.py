@@ -104,7 +104,7 @@ class CNN():
         model.add(Dropout(0.7))
         model.add(Dense(43, input_dim=128, name="output"))
         model.add(Activation('softmax', name="softmax"))
-        opt = keras.optimizers.Adagrad(lr=1e-5, epsilon=1e-08, decay=0.0)
+        opt = keras.optimizers.Adagrad(lr=1e-3, epsilon=1e-08, decay=0.0)
         model.compile(loss='categorical_crossentropy',
                       optimizer=opt,
                       metrics=['accuracy'])
@@ -197,6 +197,7 @@ class CNN():
                 start_index = 0
 
     def train(self, epochs, batch_size):
+        self.X_train_paths, self.y_train = shuffle(self.X_train_paths, self.y_train)
         history = self.model.fit_generator(self.generate_from_directory(self.X_train_paths, self.y_train, batch_size=batch_size),
                                  samples_per_epoch=len(self.X_train_paths), nb_epoch=epochs,
                                  validation_data=self.generate_from_directory(self.X_val_paths, self.y_val),
