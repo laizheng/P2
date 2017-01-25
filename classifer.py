@@ -40,9 +40,9 @@ class CNN():
         self.split()
         self.model = Model(input_shape=self.input_shape)
 
-    def decode(encoder, label, labelDict):
-        id = encoder.inverse_transform(np.array([label]))
-        return id, labelDict[str(id[0])]
+    def decode(self, Y):
+        id = self.encoder.inverse_transform(np.array([Y]))
+        return id, self.labelDict[str(id[0])]
 
     def readLabelFromFile(self):
         labelDict = {}
@@ -187,6 +187,8 @@ class CNN():
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
         temp = self.model.Y_true * tf.log(tf.clip_by_value(self.model.Y_pred, 1e-10, 1))
-        Y_true, Y_pred, cross_entropy, temp= sess.run([self.model.Y_true,self.model.Y_pred,self.model.cross_entropy,temp],\
-                                                feed_dict={self.model.X:X, self.model.Y_true:Y})
+        Y_true, Y_pred, cross_entropy, fc2, numeric_stable, wconv1 = sess.run(
+            [self.model.Y_true, self.model.Y_pred, self.model.cross_entropy, self.model.layer_fc2,
+             self.model.numeric_stable_out, self.model.weights_conv1],
+            feed_dict={self.model.X: X[10:11], self.model.Y_true: Y[10:11]})
         pass
