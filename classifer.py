@@ -80,6 +80,8 @@ class CNN():
             self.X_val_paths.extend(paths_val)
             self.y_train.extend(labels_train)
             self.y_val.extend(labels_val)
+        print("Train #={}".format(len(self.y_train)))
+        print("Val #={}".format(len(self.y_val)))
         print("Splitting completes.")
 
     def generate_from_directory(self, X_paths, y, batch_size=32):
@@ -113,12 +115,14 @@ class CNN():
                 start_index = 0
 
     def getValAccuracy(self,sess):
+        print("computing Val Acc..."),
         acc = []
-        for X, Y in self.generate_from_directory(self.X_val_paths,self.y_val,batch_size=32):
+        for X, Y in tqdm(self.generate_from_directory(self.X_val_paths,self.y_val,batch_size=32),desc='Val Acc'):
             acc.append(sess.run(self.model.accuracy,feed_dict={self.model.X:X, self.model.Y_true:Y}))
         return np.mean(acc)
 
     def getTestAccuracy(self,sess):
+        print("computing Test Acc..."),
         acc = []
         for X, Y in self.generate_from_directory(self.X_test_paths,self.y_test,batch_size=32):
             acc.append(sess.run(self.model.accuracy,feed_dict={self.model.X:X, self.model.Y_true:Y}))
@@ -139,7 +143,7 @@ class CNN():
             gen = self.generate_from_directory(self.X_train_paths, self.y_train, batch_size=batch_size)
             batch_count = int(len(self.X_train_paths)/batch_size) + 1
             batches_pbar = range(batch_count)
-            batches_pbar = tqdm(range(batch_count), desc='Epoch {:>2}/{}'.format(epoch_i + 1, epochs))
+            batches_pbar = tqdm(range(batch_count), desc='Epoch {:>2}/{}'.format(epoch_i + 1, epochs),leave=False)
             for batch_cnt in batches_pbar:
                 X, Y = next(gen)
                 # Run optimizer and get loss
