@@ -115,13 +115,13 @@ class CNN():
     def getValAccuracy(self,sess):
         acc = []
         for X, Y in self.generate_from_directory(self.X_val_paths,self.y_val,batch_size=32):
-            acc.append(sess.run(self.model.accuracy))
+            acc.append(sess.run(self.model.accuracy,feed_dict={self.model.X:X, self.model.Y_true:Y}))
         return np.mean(acc)
 
     def getTestAccuracy(self,sess):
         acc = []
         for X, Y in self.generate_from_directory(self.X_test_paths,self.y_test,batch_size=32):
-            acc.append(sess.run(self.model.accuracy))
+            acc.append(sess.run(self.model.accuracy,feed_dict={self.model.X:X, self.model.Y_true:Y}))
         return np.mean(acc)
 
     def train(self,epochs,batch_size):
@@ -156,7 +156,13 @@ class CNN():
             val_acc_epoch.append(valAcc)
             test_acc_epoch.append(testAcc)
             print("epoch {}, valAcc={},testAcc={}".format(epoch_i,valAcc,testAcc))
-        save_path = saver.save(sess, "./model-"+strftime("%Y-%m-%d-%H-%M-%S", localtime()))
+        t = strftime("%Y-%m-%d-%H-%M-%S", localtime())
+        result_dir = "./"+t
+        os.mkdir(result_dir)
+        history = {"val_acc_epoch":val_acc_epoch,"test_acc_epoch":test_acc_epoch,"cost_batch":cost_batch}
+        with open(result_dir+'history.pickle', 'wb') as f:
+            pickle.dump(history, f, protocol=pickle.HIGHEST_PROTOCOL)
+        save_path = saver.save(sess, result_dir+"/model-"+t)
         print("Model saved in file: %s" % save_path)
 
     def debug_tf(self):
