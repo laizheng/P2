@@ -13,7 +13,7 @@ from CNN_keras import CNN
 
 def main():
     cnn = CNN(use_gray = True, use_jitter = False)
-    cnn.train(epochs=2,batch_size=32)
+    cnn.train(epochs=2,batch_size=256)
     pass
 if __name__ == "__main__":
     main()
