@@ -3,6 +3,7 @@ import cv2
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
+import shutil
 
 def main():
     train_folder = "./train/"
