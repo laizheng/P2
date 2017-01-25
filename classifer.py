@@ -117,7 +117,7 @@ class CNN():
     def getValAccuracy(self,sess):
         print("computing Val Acc..."),
         acc = []
-        for X, Y in tqdm(self.generate_from_directory(self.X_val_paths,self.y_val,batch_size=32),desc='Val Acc'):
+        for X, Y in self.generate_from_directory(self.X_val_paths,self.y_val,batch_size=32):
             acc.append(sess.run(self.model.accuracy,feed_dict={self.model.X:X, self.model.Y_true:Y}))
         return np.mean(acc)
 
