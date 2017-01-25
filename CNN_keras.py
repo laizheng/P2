@@ -203,6 +203,6 @@ class CNN():
                                  nb_val_samples=len(self.y_val))
         print("val_acc history:")
         print(history.history["val_acc"])
-        res = self.model.evaluate_generator(self, self.generate_from_directory(self.X_test_paths, self.y_test, batch_size=batch_size), \
+        res = self.model.evaluate_generator(self.generate_from_directory(self.X_test_paths, self.y_test, batch_size=batch_size), \
                            val_samples=len(self.y_test))
         print("Test Acc:", str(res[1]))
