@@ -84,7 +84,7 @@ class CNN():
         print("Val #={}".format(len(self.y_val)))
         print("Splitting completes.")
 
-    def generate_from_directory(self, X_paths, y, batch_size=32):
+    def generate_from_directory(self, X_paths, y, batch_size=32, break_if_finish = False):
         """
         :param X_path: paths to stored images (list)
         :param y: target angles
@@ -112,19 +112,23 @@ class CNN():
                     X.append(x)
                 X = np.array(X)
                 yield (X, Y[start_index: len(X_paths),:])
+                if break_if_finish:
+                    return
                 start_index = 0
 
     def getValAccuracy(self,sess):
         print("computing Val Acc..."),
         acc = []
-        for X, Y in self.generate_from_directory(self.X_val_paths,self.y_val,batch_size=32):
+        for X, Y in tqdm(self.generate_from_directory(self.X_val_paths,self.y_val,batch_size=32,break_if_finish=True), \
+                         desc='Val Acc'):
             acc.append(sess.run(self.model.accuracy,feed_dict={self.model.X:X, self.model.Y_true:Y}))
         return np.mean(acc)
 
     def getTestAccuracy(self,sess):
         print("computing Test Acc..."),
         acc = []
-        for X, Y in self.generate_from_directory(self.X_test_paths,self.y_test,batch_size=32):
+        for X, Y in tqdm(self.generate_from_directory(self.X_test_paths,self.y_test,batch_size=32,break_if_finish=True), \
+                         desc='Test Acc'):
             acc.append(sess.run(self.model.accuracy,feed_dict={self.model.X:X, self.model.Y_true:Y}))
         return np.mean(acc)
 
