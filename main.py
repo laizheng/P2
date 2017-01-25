@@ -11,7 +11,7 @@ from sklearn.cross_validation import train_test_split
 from classifer import CNN
 
 def main():
-    cnn = CNN()
+    cnn = CNN(use_gray = False, use_jitter = False)
     cnn.train(epochs=500,batch_size=32)
     pass
 if __name__ == "__main__":

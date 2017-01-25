@@ -13,11 +13,12 @@ from sklearn.cross_validation import train_test_split
 import pandas as pd
 
 class Model():
-    def __init__(self):
+    def __init__(self,input_shape):
         self.img_size = 32
         self.img_shape = (self.img_size, self.img_size)
         self.num_classes = 43
         self.filter_size = 3
+        self.input_shape = input_shape
         self.getModel()
 
     ### This helper function are taken from https://github.com/Hvass-Labs/TensorFlow-Tutorials
@@ -102,13 +103,16 @@ class Model():
         return layer
 
     def getModel(self):
-        self.X = tf.placeholder(tf.float32, shape=[None, self.img_size, self.img_size], name='X')
-        self.X_reshape = tf.reshape(self.X, [-1, self.img_size, self.img_size, 1])
+        self.X = tf.placeholder(tf.float32, shape= [None] + list(self.input_shape), name='X')
+        if len(self.input_shape) == 2:
+            self.X_reshape = tf.reshape(self.X, [-1, self.img_size, self.img_size, 1])
+        else:
+            self.X_reshape = self.X
         self.Y_true = tf.placeholder(tf.float32, shape=[None, self.num_classes], name='Y')
         self.y_true = tf.argmax(self.Y_true, dimension=1)
         self.layer_conv1, self.weights_conv1 = \
             self.new_conv_layer(input=self.X_reshape,
-                           num_input_channels=1,
+                           num_input_channels=1 if len(self.input_shape) == 2 else 3,
                            filter_size=3,
                            num_filters=8,
                            strides=1,
@@ -165,7 +169,7 @@ class Model():
         self.layer_fc2 = self.new_fc_layer(input=self.dropout3,
                                  num_inputs=128,
                                  num_outputs=self.num_classes,
-                                 use_relu=True)
+                                 use_relu=False)
         self.numeric_stable_out = self.layer_fc2-tf.reshape(tf.reduce_max(self.layer_fc2,axis=1), [-1,1])
         self.Y_pred = tf.nn.softmax(self.numeric_stable_out)
         self.y_pred = tf.argmax(self.Y_pred, dimension=1)

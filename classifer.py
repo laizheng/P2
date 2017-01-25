@@ -17,9 +17,14 @@ from sklearn.utils import shuffle
 from time import localtime, strftime
 
 class CNN():
-    def __init__(self):
-        self.use_jitter = False
+    def __init__(self, use_gray = False, use_jitter = False):
+        self.use_gray = use_gray
+        self.use_jitter = use_jitter
         self.img_rows, self.img_cols = 32, 32
+        if self.use_gray:
+            self.input_shape = (self.img_rows, self.img_cols)
+        else:
+            self.input_shape = (self.img_rows, self.img_cols, 3)
         self.nb_classes = 43
         self.samplesPerTrack = {}
         self.X_train_paths, self.X_val_paths, self.y_train, self.y_val = [], [], [], []
@@ -33,7 +38,7 @@ class CNN():
         self.encoder.fit(list(self.df_train["y"]))
         self.cat()
         self.split()
-        self.model = Model()
+        self.model = Model(input_shape=self.input_shape)
 
     def decode(encoder, label, labelDict):
         id = encoder.inverse_transform(np.array([label]))
@@ -64,11 +69,14 @@ class CNN():
         :param x: one single image
         :return:
         """
-        gray = cv2.cvtColor(x, cv2.COLOR_BGR2GRAY)
-        gray = gray.astype('float64')
-        gray -= 128
-        gray /= 255
-        return gray
+        if self.use_gray:
+            ret = cv2.cvtColor(x, cv2.COLOR_BGR2GRAY)
+        else:
+            ret = x
+        ret = ret.astype('float64')
+        ret -= 128
+        ret /= 255
+        return ret
 
     def split(self):
         print("Splitting...")
@@ -136,7 +144,7 @@ class CNN():
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
-        log_batch_step = 10
+        log_batch_step = 100
         batch_num = []
         cost_batch = []
         val_acc_epoch = []
