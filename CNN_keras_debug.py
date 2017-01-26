@@ -173,7 +173,7 @@ class CNN():
         Y = self.encoder.transform(y)
         start_index = 0
         while 1:
-            if start_index + batch_size <= len(X):
+            if start_index + batch_size <= len(ids):
                 X_ret = []
                 for j in range(batch_size):
                     x = X[ids[start_index+j]]
@@ -184,7 +184,7 @@ class CNN():
                 start_index = start_index + batch_size
             else:
                 X_ret = []
-                for j in range(len(X) - start_index):
+                for j in range(len(ids) - start_index):
                     x = X[ids[start_index+j]]
                     x = self.imgPreprocess(x)
                     X_ret.append(x)
