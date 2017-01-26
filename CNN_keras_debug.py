@@ -198,7 +198,7 @@ class CNN():
         self.train_ids = shuffle(self.train_ids)
         history = self.model.fit_generator(self.generate_from_ids(self.X_train, self.y_train, self.train_ids, batch_size=batch_size),
                                  samples_per_epoch=len(self.train_ids), nb_epoch=epochs,
-                                 validation_data=self.generate_from_ids(self.X_train, self.y_train, self.val_ids),
+                                 validation_data=self.generate_from_ids(self.X_train, self.y_train, self.val_ids, batch_size=batch_size),
                                  nb_val_samples=len(self.val_ids))
         print("val_acc history:")
         print(history.history["val_acc"])
