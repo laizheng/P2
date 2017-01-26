@@ -183,7 +183,7 @@ class CNN():
             history = {"val_acc_epoch":val_acc_epoch,"cost_batch":cost_batch}
             with open(result_dir+'/history.pickle', 'wb') as f:
                 pickle.dump(history, f, protocol=pickle.HIGHEST_PROTOCOL)
-            save_path = saver.save(sess, result_dir+"/model-"+t)
+            save_path = saver.save(sess, result_dir+"/model-"+t+".ckt")
             print("Model saved in file: %s" % save_path)
         testAcc = self.getTestAccuracy(sess=sess)
         print("Test Accuracy: {}".format(testAcc))

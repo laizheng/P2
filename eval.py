@@ -14,12 +14,9 @@ from sklearn.cross_validation import train_test_split
 #from CNN_from_nparray import CNN
 from CNN import CNN
 
+
 def main():
-    cnn = CNN(use_gray = True, use_jitter = True)
-    cnn.train(epochs=100,batch_size=256)
+    cnn = CNN(use_gray = True, use_jitter = False)
+    cnn.test_saved_model(model_path='./2017-01-26-15-35-44/model-2017-01-26-15-35-44.data-00000-of-00001')
 if __name__ == "__main__":
     main()
-
-
-
-
