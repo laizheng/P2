@@ -23,7 +23,7 @@ class Model():
 
     ### This helper function are taken from https://github.com/Hvass-Labs/TensorFlow-Tutorials
     def new_weights(self, shape):
-        return tf.Variable(tf.random_uniform(shape, minval=-0.05, maxval=0.05))
+        return tf.Variable(tf.truncated_normal(shape, stddev=0.05))
 
     def new_biases(sefl, length):
         return tf.Variable(tf.constant(0, shape=[length], dtype=tf.float32))
@@ -180,4 +180,4 @@ class Model():
         #self.optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(self.cost)
         #self.optimizer = tf.train.AdamOptimizer(learning_rate=1e-3,beta1=0.85, beta2=0.95, epsilon=1e-2).minimize(self.cost)
         #self.optimizer = tf.train.AdamOptimizer(learning_rate=1e-5).minimize(self.cost)
-        self.optimizer = tf.train.AdagradOptimizer(learning_rate=1e-3).minimize(self.cost)
+        self.optimizer = tf.train.AdagradOptimizer(learning_rate=1e-4).minimize(self.cost)
