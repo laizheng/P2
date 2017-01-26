@@ -143,7 +143,7 @@ class CNN():
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
-        log_batch_step = 100
+        log_batch_step = 10
         batch_num = []
         cost_batch = []
         val_acc_epoch = []
@@ -168,6 +168,8 @@ class CNN():
             valAcc = self.getValAccuracy(sess=sess)
             val_acc_epoch.append(valAcc)
             print("epoch {}, valAcc={}".format(epoch_i,valAcc))
+        testAcc = self.getTestAccuracy(sess=sess)
+        print("Test Accuracy: {}".format(testAcc))
         t = strftime("%Y-%m-%d-%H-%M-%S", localtime())
         result_dir = "./"+t
         os.mkdir(result_dir)

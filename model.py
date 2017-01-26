@@ -173,10 +173,9 @@ class Model():
         self.numeric_stable_out = self.layer_fc2-tf.reshape(tf.reduce_max(self.layer_fc2,axis=1), [-1,1])
         self.Y_pred = tf.nn.softmax(self.numeric_stable_out)
         self.y_pred = tf.argmax(self.Y_pred, dimension=1)
-        #Todo
         self.cross_entropy = -tf.reduce_sum(self.Y_true * tf.log(self.Y_pred), reduction_indices=1)
         self.cost = tf.reduce_mean(self.cross_entropy)
         self.correct_prediction = tf.equal(self.y_pred, self.y_true)
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))
-        self.optimizer = tf.train.AdamOptimizer().minimize(self.cost)
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(self.cost)
 
