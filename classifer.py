@@ -154,7 +154,7 @@ class CNN():
             self.X_train_paths, self.y_train = shuffle(self.X_train_paths,self.y_train)
             gen = self.generate_from_directory(self.X_train_paths, self.y_train, batch_size=batch_size)
             batch_count = int(len(self.X_train_paths)/batch_size) + 1
-            batches_pbar = range(batch_count)
+            #batches_pbar = range(batch_count)
             batches_pbar = tqdm(range(batch_count), desc='Epoch {:>2}/{}'.format(epoch_i + 1, epochs),leave=False)
             for batch_cnt in batches_pbar:
                 X, Y = next(gen)

@@ -189,7 +189,7 @@ class CNN():
                     x = self.imgPreprocess(x)
                     X_ret.append(x)
                 X_ret = np.array(X_ret)
-                yield (X, Y[ids[start_index: len(X)], :])
+                yield (X_ret, Y[ids[start_index: len(ids)], :])
                 if break_if_finish:
                     return
                 start_index = 0
