@@ -21,7 +21,6 @@ class Model():
         self.input_shape = input_shape
         self.getModel()
 
-    ### This helper function are taken from https://github.com/Hvass-Labs/TensorFlow-Tutorials
     def new_weights(self, shape):
         return tf.Variable(tf.truncated_normal(shape, stddev=0.05))
 
@@ -114,71 +113,49 @@ class Model():
             self.new_conv_layer(input=self.X_reshape,
                            num_input_channels=1 if len(self.input_shape) == 2 else 3,
                            filter_size=3,
-                           num_filters=8,
-                           strides=1,
+                           num_filters=16,
+                           strides=2,
                            padding='SAME',
                            use_pooling=False)
         self.layer_conv2, self.weights_conv2 = \
             self.new_conv_layer(input=self.layer_conv1,
-                           num_input_channels=8,
-                           filter_size=3,
-                           num_filters=16,
-                           strides=1,
-                           padding='SAME',
-                           use_pooling=False)
-        self.layer_conv3, self.weights_conv3 = \
-            self.new_conv_layer(input=self.layer_conv2,
                            num_input_channels=16,
                            filter_size=3,
                            num_filters=24,
                            strides=2,
                            padding='SAME',
                            use_pooling=False)
-        self.dropout1 = tf.nn.dropout(self.layer_conv3, keep_prob=0.7)
-        self.layer_conv4, self.weights_conv4 = \
-            self.new_conv_layer(input=self.dropout1,
+        self.layer_conv3, self.weights_conv3 = \
+            self.new_conv_layer(input=self.layer_conv2,
                            num_input_channels=24,
                            filter_size=3,
-                           num_filters=32,
-                           strides=1,
-                           padding='SAME',
-                           use_pooling=False)
-        self.layer_conv5, self.weights_conv5 = \
-            self.new_conv_layer(input=self.layer_conv4,
-                           num_input_channels=32,
-                           filter_size=3,
-                           num_filters=48,
-                           strides=1,
-                           padding='SAME',
-                           use_pooling=False)
-        self.layer_conv6, self.weights_conv6 = \
-            self.new_conv_layer(input=self.layer_conv5,
-                           num_input_channels=48,
-                           filter_size=3,
-                           num_filters=64,
+                           num_filters=36,
                            strides=2,
                            padding='SAME',
                            use_pooling=False)
-        self.dropout2 = tf.nn.dropout(self.layer_conv6, keep_prob=0.7)
-        self.layer_flat, self.num_flat_features = self.flatten_layer(self.dropout2)
+        self.layer_conv4, self.weights_conv4 = \
+            self.new_conv_layer(input=self.layer_conv3,
+                           num_input_channels=36,
+                           filter_size=3,
+                           num_filters=48,
+                           strides=2,
+                           padding='SAME',
+                           use_pooling=False)
+        self.layer_flat, self.num_flat_features = self.flatten_layer(self.layer_conv4)
         self.layer_fc1, self.weights_fc1 = self.new_fc_layer(input=self.layer_flat,
                                  num_inputs=self.num_flat_features,
                                  num_outputs=128,
                                  use_relu=True)
-        self.dropout3 = tf.nn.dropout(self.layer_fc1, keep_prob=0.7)
-        self.layer_fc2, self.weights_fc2 = self.new_fc_layer(input=self.dropout3,
+        #self.dropout3 = tf.nn.dropout(self.layer_fc1, keep_prob=0.7)
+        self.layer_fc2, self.weights_fc2 = self.new_fc_layer(input=self.layer_fc1,
                                  num_inputs=128,
                                  num_outputs=self.num_classes,
                                  use_relu=False)
         self.numeric_stable_out = self.layer_fc2-tf.reshape(tf.reduce_max(self.layer_fc2,axis=1), [-1,1])
         self.Y_pred = tf.nn.softmax(self.numeric_stable_out)
         self.y_pred = tf.argmax(self.Y_pred, dimension=1)
-        self.cross_entropy = -tf.reduce_sum(self.Y_true * tf.log(self.Y_pred), reduction_indices=1)
+        self.cross_entropy = -tf.reduce_sum(self.Y_true * tf.log(tf.clip_by_value(self.Y_pred,1e-10,1)), reduction_indices=1)
         self.cost = tf.reduce_mean(self.cross_entropy)
         self.correct_prediction = tf.equal(self.y_pred, self.y_true)
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))
-        #self.optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(self.cost)
-        #self.optimizer = tf.train.AdamOptimizer(learning_rate=1e-3,beta1=0.85, beta2=0.95, epsilon=1e-2).minimize(self.cost)
         self.optimizer = tf.train.AdamOptimizer(learning_rate=1e-3).minimize(self.cost)
-        #self.optimizer = tf.train.AdagradOptimizer(learning_rate=1e-4).minimize(self.cost)
-        #self.optimizer = tf.train.AdadeltaOptimizer().minimize(self.cost)

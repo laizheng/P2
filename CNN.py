@@ -15,10 +15,10 @@ from model2 import Model
 from tqdm import tqdm
 from sklearn.utils import shuffle
 from time import localtime, strftime
-from tensorflow.python import debug as tf_debug
+#from tensorflow.python import debug as tf_debug
 
 class CNN():
-    def __init__(self, use_gray=False, use_jitter=False):
+    def __init__(self, use_gray = False, use_jitter = False):
         self.use_gray = use_gray
         self.use_jitter = use_jitter
         self.img_rows, self.img_cols = 32, 32
@@ -27,21 +27,16 @@ class CNN():
         else:
             self.input_shape = (self.img_rows, self.img_cols, 3)
         self.nb_classes = 43
-        training_file = "./train.p"
-        testing_file = "./test.p"
-        with open(training_file, mode='rb') as f:
-            train = pickle.load(f)
-        with open(testing_file, mode='rb') as f:
-            test = pickle.load(f)
-        self.X_train, self.y_train = train['features'], train['labels']
-        self.X_test, self.y_test = test['features'], test['labels']
-        self.train_ids = []
-        self.val_ids = []
-        self.test_ids = np.array(list(range(len(self.y_test))))
         self.samplesPerTrack = {}
+        self.X_train_paths, self.X_val_paths, self.y_train, self.y_val = [], [], [], []
         self.labelDict = self.readLabelFromFile()
+        self.df_train = pd.read_csv("./train_data.csv", sep=",\s*", engine='python')
+        self.df_jitter = pd.read_csv("./jitter_data.csv", sep=",\s*", engine='python')
+        self.df_test = pd.read_csv("./test_data.csv", sep=",\s*",engine='python')
+        self.X_test_paths = list(self.df_test['path'])
+        self.y_test = list(self.df_test['y'])
         self.encoder = LabelBinarizer()
-        self.encoder.fit(np.unique(self.y_train))
+        self.encoder.fit(list(self.df_train["y"]))
         self.cat()
         self.split()
         self.model = Model(input_shape=self.input_shape)
@@ -60,18 +55,17 @@ class CNN():
 
     def cat(self):
         print("Categorizing...")
-        tracks = np.unique(self.y_train)  # a list of unique tracks
-        self.samplesPerTrack = {} # store the id to image/y
+        tracks = self.df_train['y'].unique() # a list of unique tracks
+        self.samplesPerTrack = {}
         for track in tracks:
             self.samplesPerTrack[track] = []
-            select = np.reshape(np.argwhere(self.y_train==track),(len(np.argwhere(self.y_train==track)),))
-            self.samplesPerTrack[track].extend(select)
-        #if self.use_jitter:
-        #    for track in tracks:
-        #        self.samplesPerTrack[track].extend(list(self.df_jitter[self.df_jitter['y'] == track]['path']))
+            self.samplesPerTrack[track].extend(list(self.df_train[self.df_train['y'] == track]['path']))
+        if self.use_jitter:
+            for track in tracks:
+                self.samplesPerTrack[track].extend(list(self.df_jitter[self.df_jitter['y'] == track]['path']))
         print("Categorization completes.")
 
-    def imgPreprocess(self, x):
+    def imgPreprocess(self,x):
         """
         :param x: one single image
         :return:
@@ -88,38 +82,45 @@ class CNN():
     def split(self):
         print("Splitting...")
         for track in self.samplesPerTrack.keys():
-            ids = self.samplesPerTrack[track]
-            ids_train, ids_val = train_test_split(ids, test_size=0.2, random_state=42)
-            self.train_ids.extend(ids_train)
-            self.val_ids.extend(ids_val)
-        self.train_ids = np.array(self.train_ids)
-        self.val_ids = np.array(self.val_ids)
-        print("Train #={}".format(len(self.train_ids)))
-        print("Val #={}".format(len(self.val_ids)))
+            paths = self.samplesPerTrack[track]
+            labels = [track for i in range(len(paths))]
+            paths_train, paths_val, labels_train, labels_val = train_test_split(paths, labels, test_size=0.2,random_state=42)
+            self.X_train_paths.extend(paths_train)
+            self.X_val_paths.extend(paths_val)
+            self.y_train.extend(labels_train)
+            self.y_val.extend(labels_val)
+        print("Train #={}".format(len(self.y_train)))
+        print("Val #={}".format(len(self.y_val)))
         print("Splitting completes.")
 
-    def generate_from_ids(self, X, y, ids, batch_size=32, break_if_finish=False):
-        assert len(X) == len(y)
+    def generate_from_directory(self, X_paths, y, batch_size=32, break_if_finish = False):
+        """
+        :param X_path: paths to stored images (list)
+        :param y: target angles
+        :return: image in the form of numpy arrays; target values in the form of np.array
+        """
+        assert len(X_paths) == len(y)
         Y = self.encoder.transform(y)
+        numOfBatches = int(Y.shape[0] / batch_size)
         start_index = 0
         while 1:
-            if start_index + batch_size <= len(ids):
-                X_ret = []
+            if start_index + batch_size <= len(X_paths):
+                X = []
                 for j in range(batch_size):
-                    x = X[ids[start_index+j]]
+                    x = cv2.imread(X_paths[start_index+j])
                     x = self.imgPreprocess(x)
-                    X_ret.append(x)
-                X_ret = np.array(X_ret)
-                yield (X_ret, Y[ids[start_index: start_index + batch_size], :])
+                    X.append(x)
+                X = np.array(X)
+                yield (X, Y[start_index: start_index + batch_size,:])
                 start_index = start_index + batch_size
             else:
-                X_ret = []
-                for j in range(len(ids) - start_index):
-                    x = X[ids[start_index+j]]
+                X = []
+                for j in range(len(X_paths) - start_index):
+                    x = cv2.imread(X_paths[start_index+j])
                     x = self.imgPreprocess(x)
-                    X_ret.append(x)
-                X_ret = np.array(X_ret)
-                yield (X_ret, Y[ids[start_index: len(ids)], :])
+                    X.append(x)
+                X = np.array(X)
+                yield (X, Y[start_index: len(X_paths),:])
                 if break_if_finish:
                     return
                 start_index = 0
@@ -127,7 +128,7 @@ class CNN():
     def getValAccuracy(self,sess):
         print("computing Val Acc..."),
         acc = []
-        for X, Y in tqdm(self.generate_from_ids(self.X_train,self.y_train,self.val_ids,batch_size=32,break_if_finish=True), \
+        for X, Y in tqdm(self.generate_from_directory(self.X_val_paths,self.y_val,batch_size=32,break_if_finish=True), \
                          desc='Val Acc'):
             acc.append(sess.run(self.model.accuracy,feed_dict={self.model.X:X, self.model.Y_true:Y}))
         return np.mean(acc)
@@ -135,15 +136,13 @@ class CNN():
     def getTestAccuracy(self,sess):
         print("computing Test Acc..."),
         acc = []
-        for X, Y in tqdm(self.generate_from_ids(self.X_train,self.y_train,self.test_ids,batch_size=32,break_if_finish=True), \
+        for X, Y in tqdm(self.generate_from_directory(self.X_test_paths,self.y_test,batch_size=32,break_if_finish=True), \
                          desc='Test Acc'):
             acc.append(sess.run(self.model.accuracy,feed_dict={self.model.X:X, self.model.Y_true:Y}))
         return np.mean(acc)
 
     def train(self,epochs,batch_size):
         sess = tf.Session()
-        #sess = tf_debug.LocalCLIDebugWrapperSession(sess)
-        #sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
         log_batch_step = 10
@@ -155,10 +154,9 @@ class CNN():
         os.mkdir(result_dir)
         print("Training Begin...")
         for epoch_i in range(epochs):
-            self.train_ids = shuffle(self.train_ids)
-            gen = self.generate_from_ids(self.X_train, self.y_train, self.train_ids, batch_size=batch_size)
-            batch_count = int(len(self.train_ids)/batch_size) + 1
-            #batches_pbar = range(batch_count)
+            self.X_train_paths, self.y_train = shuffle(self.X_train_paths,self.y_train)
+            gen = self.generate_from_directory(self.X_train_paths, self.y_train, batch_size=batch_size)
+            batch_count = int(len(self.X_train_paths)/batch_size) + 1
             batches_pbar = tqdm(range(batch_count), desc='Epoch {:>2}/{}'.format(epoch_i + 1, epochs),leave=False)
             for batch_cnt in batches_pbar:
                 X, Y = next(gen)
@@ -166,7 +164,6 @@ class CNN():
                 _, l = sess.run(
                     [self.model.optimizer, self.model.cost],
                     feed_dict={self.model.X:X, self.model.Y_true:Y})
-                # Log every 50 batches
                 if not batch_cnt % log_batch_step:
                     previous_batch = batch_num[-1] if batch_num else 0
                     batch_num.append(log_batch_step + previous_batch)
@@ -176,24 +173,25 @@ class CNN():
                               self.model.weights_conv4, self.model.weights_fc1, self.model.weights_fc2,
                               self.model.Y_pred],
                              feed_dict={self.model.X: X, self.model.Y_true: Y})
-                if np.isnan(np.sum(wconv1)) or np.isnan(np.sum(wconv2)) or np.isnan(np.sum(wconv3)) or np.isnan(np.sum(wconv4)) \
+                if np.isnan(np.sum(wconv1)) or np.isnan(np.sum(wconv2)) or np.isnan(np.sum(wconv3)) or np.isnan(
+                        np.sum(wconv4)) \
                         or np.isnan(np.sum(wconvfc1)) or np.isnan(np.sum(wconvfc2)) or np.isnan(np.sum(Y_pred)):
                     raise ValueError("nan detected")
             valAcc = self.getValAccuracy(sess=sess)
             val_acc_epoch.append(valAcc)
             print("epoch {}, valAcc={}".format(epoch_i,valAcc))
-            history = {"val_acc_epoch": val_acc_epoch, "cost_batch": cost_batch}
-            with open(result_dir + 'history.pickle', 'wb') as f:
+            history = {"val_acc_epoch":val_acc_epoch,"cost_batch":cost_batch}
+            with open(result_dir+'/history.pickle', 'wb') as f:
                 pickle.dump(history, f, protocol=pickle.HIGHEST_PROTOCOL)
-            #save_path = saver.save(sess, result_dir + "/model-" + t)
-            #print("Model saved in file: %s" % save_path)
+            save_path = saver.save(sess, result_dir+"/model-"+t)
+            print("Model saved in file: %s" % save_path)
         testAcc = self.getTestAccuracy(sess=sess)
         print("Test Accuracy: {}".format(testAcc))
 
     def debug_tf(self):
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
-        gen = self.generate_from_ids(self.X_train, self.y_train, self.train_ids, batch_size=4)
+        gen = self.generate_from_directory(self.X_train_paths, self.y_train, batch_size=4)
         X, Y = next(gen)
         wconv1, wconv2, wconv3, wconv4, wconvfc1, wconvfc2, numeric_stable, Y_pred = \
             sess.run([self.model.weights_conv1, self.model.weights_conv2, self.model.weights_conv3, \
@@ -201,3 +199,11 @@ class CNN():
                       self.model.numeric_stable_out, self.model.Y_pred],
                      feed_dict={self.model.X: X, self.model.Y_true: Y})
         pass
+
+    def test_saved_model(self,model_path):
+        sess = tf.Session()
+        sess.run(tf.global_variables_initializer())
+        saver = tf.train.Saver()
+        saver.restore(sess, "./model.ckpt.2conv.2fc.1129")
+        test_acc = self.getTestAccuracy(sess)
+        print("Test Accuracy is: {}".format(test_acc))

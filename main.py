@@ -11,7 +11,8 @@ from sklearn.cross_validation import train_test_split
 #from classifer import CNN
 #from CNN_keras import CNN
 #from CNN_keras_debug import CNN
-from CNN_from_nparray import CNN
+#from CNN_from_nparray import CNN
+from CNN import CNN
 
 def main():
     cnn = CNN(use_gray = True, use_jitter = False)
