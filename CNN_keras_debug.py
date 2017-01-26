@@ -109,7 +109,7 @@ class CNN():
         model.add(Dropout(0.7))
         model.add(Dense(43, input_dim=128, name="output"))
         model.add(Activation('softmax', name="softmax"))
-        opt = keras.optimizers.Adagrad(lr=1e-3, epsilon=1e-08, decay=0.0)
+        opt = keras.optimizers.Adagrad()
         model.compile(loss='categorical_crossentropy',
                       optimizer=opt,
                       metrics=['accuracy'])
