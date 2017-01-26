@@ -26,7 +26,7 @@ class Model():
         return tf.Variable(tf.truncated_normal(shape, stddev=0.05))
 
     def new_biases(sefl, length):
-        return tf.Variable(tf.constant(0, shape=[length], dtype=float))
+        return tf.Variable(tf.constant(0, shape=[length], dtype=tf.float32))
 
     def new_conv_layer(self,
                        input,  # The previous layer.
