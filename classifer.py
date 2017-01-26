@@ -149,6 +149,9 @@ class CNN():
         cost_batch = []
         val_acc_epoch = []
         test_acc_epoch = []
+        t = strftime("%Y-%m-%d-%H-%M-%S", localtime())
+        result_dir = "./" + t
+        os.mkdir(result_dir)
         print("Training Begin...")
         for epoch_i in range(epochs):
             self.X_train_paths, self.y_train = shuffle(self.X_train_paths,self.y_train)
@@ -172,14 +175,11 @@ class CNN():
             val_acc_epoch.append(valAcc)
             test_acc_epoch.append(testAcc)
             print("epoch {}, valAcc={},testAcc={}".format(epoch_i,valAcc,testAcc))
-        t = strftime("%Y-%m-%d-%H-%M-%S", localtime())
-        result_dir = "./"+t
-        os.mkdir(result_dir)
-        history = {"val_acc_epoch":val_acc_epoch,"test_acc_epoch":test_acc_epoch,"cost_batch":cost_batch}
-        with open(result_dir+'history.pickle', 'wb') as f:
-            pickle.dump(history, f, protocol=pickle.HIGHEST_PROTOCOL)
-        save_path = saver.save(sess, result_dir+"/model-"+t)
-        print("Model saved in file: %s" % save_path)
+            history = {"val_acc_epoch":val_acc_epoch,"test_acc_epoch":test_acc_epoch,"cost_batch":cost_batch}
+            with open(result_dir+'history.pickle', 'wb') as f:
+                pickle.dump(history, f, protocol=pickle.HIGHEST_PROTOCOL)
+            save_path = saver.save(sess, result_dir+"/model-"+t)
+            print("Model saved in file: %s" % save_path)
 
     def debug_tf(self):
         gen = self.generate_from_directory(self.X_train_paths, self.y_train, batch_size=4)
