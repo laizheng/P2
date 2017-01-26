@@ -23,7 +23,7 @@ class Model():
 
     ### This helper function are taken from https://github.com/Hvass-Labs/TensorFlow-Tutorials
     def new_weights(self, shape):
-        return tf.Variable(tf.truncated_normal(shape, stddev=0.5))
+        return tf.Variable(tf.random_uniform(shape, minval=-0.05, maxval=0.05))
 
     def new_biases(sefl, length):
         return tf.Variable(tf.constant(0, shape=[length], dtype=tf.float32))
