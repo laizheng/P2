@@ -180,4 +180,4 @@ class Model():
         #self.optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(self.cost)
         #self.optimizer = tf.train.AdamOptimizer(learning_rate=1e-3,beta1=0.85, beta2=0.95, epsilon=1e-2).minimize(self.cost)
         #self.optimizer = tf.train.AdamOptimizer(learning_rate=1e-5).minimize(self.cost)
-        self.optimizer = tf.train.AdagradOptimizer().minimize(self.cost)
+        self.optimizer = tf.train.AdagradOptimizer(learning_rate=1e-3).minimize(self.cost)
