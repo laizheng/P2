@@ -11,7 +11,7 @@ import shutil
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.cross_validation import train_test_split
 import pandas as pd
-from model2 import Model
+from model3 import Model
 from tqdm import tqdm
 from sklearn.utils import shuffle
 from time import localtime, strftime
@@ -204,6 +204,6 @@ class CNN():
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
-        saver.restore(sess, "./model.ckpt.2conv.2fc.1129")
+        saver.restore(sess, model_path)
         test_acc = self.getTestAccuracy(sess)
         print("Test Accuracy is: {}".format(test_acc))
