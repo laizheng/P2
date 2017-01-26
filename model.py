@@ -177,5 +177,5 @@ class Model():
         self.cost = tf.reduce_mean(self.cross_entropy)
         self.correct_prediction = tf.equal(self.y_pred, self.y_true)
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))
-        self.optimizer = tf.train.AdamOptimizer(learning_rate=1e-5).minimize(self.cost)
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=5e-5).minimize(self.cost)
 
