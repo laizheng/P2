@@ -147,6 +147,9 @@ class CNN():
         batch_num = []
         cost_batch = []
         val_acc_epoch = []
+        t = strftime("%Y-%m-%d-%H-%M-%S", localtime())
+        result_dir = "./" + t
+        os.mkdir(result_dir)
         print("Training Begin...")
         for epoch_i in range(epochs):
             self.train_ids = shuffle(self.train_ids)
@@ -168,16 +171,19 @@ class CNN():
             valAcc = self.getValAccuracy(sess=sess)
             val_acc_epoch.append(valAcc)
             print("epoch {}, valAcc={}".format(epoch_i,valAcc))
+            history = {"val_acc_epoch": val_acc_epoch, "cost_batch": cost_batch}
+            with open(result_dir + 'history.pickle', 'wb') as f:
+                pickle.dump(history, f, protocol=pickle.HIGHEST_PROTOCOL)
+            save_path = saver.save(sess, result_dir + "/model-" + t)
+            print("Model saved in file: %s" % save_path)
         testAcc = self.getTestAccuracy(sess=sess)
         print("Test Accuracy: {}".format(testAcc))
-        t = strftime("%Y-%m-%d-%H-%M-%S", localtime())
-        result_dir = "./"+t
-        os.mkdir(result_dir)
-        history = {"val_acc_epoch":val_acc_epoch,"cost_batch":cost_batch}
-        with open(result_dir+'history.pickle', 'wb') as f:
+        history = {"val_acc_epoch": val_acc_epoch, "cost_batch": cost_batch}
+        with open(result_dir + 'history.pickle', 'wb') as f:
             pickle.dump(history, f, protocol=pickle.HIGHEST_PROTOCOL)
-        save_path = saver.save(sess, result_dir+"/model-"+t)
+        save_path = saver.save(sess, result_dir + "/model-" + t)
         print("Model saved in file: %s" % save_path)
+
 
     def debug_tf(self):
         gen = self.generate_from_ids(self.X_train, self.y_train, self.train_ids, batch_size=4)
