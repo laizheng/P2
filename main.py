@@ -15,7 +15,7 @@ from CNN_from_nparray import CNN
 
 def main():
     cnn = CNN(use_gray = True, use_jitter = False)
-    cnn.train(epochs=100,batch_size=64)
+    cnn.train(epochs=300,batch_size=64)
     pass
 if __name__ == "__main__":
     main()
