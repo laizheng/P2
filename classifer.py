@@ -74,7 +74,7 @@ class CNN():
         else:
             ret = x
         ret = ret.astype('float64')
-        ret -= 128
+        #ret -= 128
         ret /= 255
         return ret
 
