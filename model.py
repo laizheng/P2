@@ -179,5 +179,5 @@ class Model():
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))
         #self.optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(self.cost)
         #self.optimizer = tf.train.AdamOptimizer(learning_rate=1e-3,beta1=0.85, beta2=0.95, epsilon=1e-2).minimize(self.cost)
-        self.optimizer = tf.train.AdamOptimizer().minimize(self.cost)
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(self.cost)
 
