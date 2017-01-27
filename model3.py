@@ -122,12 +122,12 @@ class Model():
                            num_input_channels=16,
                            filter_size=3,
                            num_filters=24,
-                           strides=2,
+                           strides=1,
                            padding='SAME',
                            use_pooling=False)
-        #self.dropout0 = tf.nn.dropout(self.layer_conv2, keep_prob=0.2)
+        self.dropout0 = tf.nn.dropout(self.layer_conv2, keep_prob=0.2)
         self.layer_conv3, self.weights_conv3 = \
-            self.new_conv_layer(input=self.layer_conv2,
+            self.new_conv_layer(input=self.dropout0,
                            num_input_channels=24,
                            filter_size=3,
                            num_filters=36,
@@ -142,9 +142,9 @@ class Model():
                            strides=2,
                            padding='SAME',
                            use_pooling=False)
-        #self.dropout1 = tf.nn.dropout(self.layer_conv4, keep_prob=0.2)
+        self.dropout1 = tf.nn.dropout(self.layer_conv4, keep_prob=0.2)
         self.layer_conv5, self.weights_conv5 = \
-            self.new_conv_layer(input=self.layer_conv4,
+            self.new_conv_layer(input=self.dropout1,
                                 num_input_channels=48,
                                 filter_size=3,
                                 num_filters=60,
@@ -165,8 +165,8 @@ class Model():
                                  num_inputs=self.num_flat_features,
                                  num_outputs=128,
                                  use_relu=True)
-        #self.dropout3 = tf.nn.dropout(self.layer_fc1, keep_prob=0.7)
-        self.layer_fc2, self.weights_fc2 = self.new_fc_layer(input=self.layer_fc1,
+        self.dropout3 = tf.nn.dropout(self.layer_fc1, keep_prob=0.2)
+        self.layer_fc2, self.weights_fc2 = self.new_fc_layer(input=self.dropout3,
                                  num_inputs=128,
                                  num_outputs=self.num_classes,
                                  use_relu=False)
