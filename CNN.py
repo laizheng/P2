@@ -144,6 +144,14 @@ class CNN():
             acc.append(sess.run(self.model.accuracy,feed_dict={self.model.X:X, self.model.Y_true:Y}))
         return np.mean(acc)
 
+    def getTrainAccuracy(self,sess):
+        print("computing Train Acc..."),
+        acc = []
+        for X, Y in tqdm(self.generate_from_directory(self.X_train_paths,self.y_train,batch_size=32,break_if_finish=True), \
+                         desc='Train Acc'):
+            acc.append(sess.run(self.model.accuracy,feed_dict={self.model.X:X, self.model.Y_true:Y}))
+        return np.mean(acc)
+
     def train(self,epochs,batch_size):
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
@@ -153,22 +161,27 @@ class CNN():
         batch_num = []
         cost_batch = []
         val_acc_epoch = []
+        train_acc_epoch = []
+        acc = 0
         print("Training Begin...")
         for epoch_i in range(epochs):
             self.X_train_paths, self.y_train = shuffle(self.X_train_paths,self.y_train)
             gen = self.generate_from_directory(self.X_train_paths, self.y_train, batch_size=batch_size)
             batch_count = int(len(self.X_train_paths)/batch_size) + 1
-            batches_pbar = tqdm(range(batch_count), desc='Epoch {:>2}/{}'.format(epoch_i + 1, epochs),leave=False)
+            batches_pbar = tqdm(range(batch_count), \
+                                desc='Epoch {:>2}/{}'.format(epoch_i + 1, epochs),\
+                                postfix=acc)
             for batch_cnt in batches_pbar:
                 X, Y = next(gen)
                 # Run optimizer and get loss
-                _, l = sess.run(
-                    [self.model.optimizer, self.model.cost],
+                _, l, acc = sess.run(
+                    [self.model.optimizer, self.model.cost, self.model.accuracy],
                     feed_dict={self.model.X:X, self.model.Y_true:Y})
                 if not batch_cnt % log_batch_step:
                     previous_batch = batch_num[-1] if batch_num else 0
                     batch_num.append(log_batch_step + previous_batch)
                     cost_batch.append(l)
+                """
                 wconv1, wconv2, wconv3, wconv4, wconvfc1, wconvfc2, Y_pred = \
                     sess.run([self.model.weights_conv1, self.model.weights_conv2, self.model.weights_conv3, \
                               self.model.weights_conv4, self.model.weights_fc1, self.model.weights_fc2,
@@ -178,10 +191,13 @@ class CNN():
                         np.sum(wconv4)) \
                         or np.isnan(np.sum(wconvfc1)) or np.isnan(np.sum(wconvfc2)) or np.isnan(np.sum(Y_pred)):
                     raise ValueError("nan detected")
+                """
             valAcc = self.getValAccuracy(sess=sess)
             val_acc_epoch.append(valAcc)
-            print("epoch {}, valAcc={}".format(epoch_i,valAcc))
-            history = {"val_acc_epoch":val_acc_epoch,"cost_batch":cost_batch}
+            trainAcc = self.getTrainAccuracy(sess=sess)
+            train_acc_epoch.append(trainAcc)
+            print("epoch {}, valAcc={}, trainAcc={}".format(epoch_i,valAcc,trainAcc))
+            history = {"val_acc_epoch":val_acc_epoch,"cost_batch":cost_batch, "train_acc_epoch":train_acc_epoch}
             with open(self.log_dir+'/history.pickle', 'wb') as f:
                 pickle.dump(history, f, protocol=pickle.HIGHEST_PROTOCOL)
             save_path = saver.save(sess, self.log_dir+"/model.ckt")
