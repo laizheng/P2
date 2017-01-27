@@ -40,6 +40,9 @@ class CNN():
         self.cat()
         self.split()
         self.model = Model(input_shape=self.input_shape)
+        t = strftime("%Y-%m-%d-%H-%M-%S", localtime())
+        self.log_dir = "./" + t + '/'
+        os.mkdir(self.log_dir)
 
     def decode(self, Y):
         id = self.encoder.inverse_transform(np.array([Y]))
@@ -145,13 +148,11 @@ class CNN():
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
+        file_writer = tf.summary.FileWriter(self.log_dir, sess.graph)
         log_batch_step = 10
         batch_num = []
         cost_batch = []
         val_acc_epoch = []
-        t = strftime("%Y-%m-%d-%H-%M-%S", localtime())
-        result_dir = "./" + t
-        os.mkdir(result_dir)
         print("Training Begin...")
         for epoch_i in range(epochs):
             self.X_train_paths, self.y_train = shuffle(self.X_train_paths,self.y_train)
@@ -181,9 +182,9 @@ class CNN():
             val_acc_epoch.append(valAcc)
             print("epoch {}, valAcc={}".format(epoch_i,valAcc))
             history = {"val_acc_epoch":val_acc_epoch,"cost_batch":cost_batch}
-            with open(result_dir+'/history.pickle', 'wb') as f:
+            with open(self.log_dir+'/history.pickle', 'wb') as f:
                 pickle.dump(history, f, protocol=pickle.HIGHEST_PROTOCOL)
-            save_path = saver.save(sess, result_dir+"/model-"+t+".ckt")
+            save_path = saver.save(sess, self.log_dir+"/model.ckt")
             print("Model saved in file: %s" % save_path)
         testAcc = self.getTestAccuracy(sess=sess)
         print("Test Accuracy: {}".format(testAcc))
@@ -205,5 +206,7 @@ class CNN():
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
         saver.restore(sess, model_path)
+        val_acc = self.getValAccuracy(sess)
+        print("Val Accuracy is: {}".format(val_acc))
         test_acc = self.getTestAccuracy(sess)
         print("Test Accuracy is: {}".format(test_acc))

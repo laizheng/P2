@@ -17,6 +17,6 @@ from CNN import CNN
 
 def main():
     cnn = CNN(use_gray = True, use_jitter = False)
-    cnn.test_saved_model(model_path='./2017-01-26-15-35-44/model-2017-01-26-15-35-44')
+    cnn.test_saved_model(model_path='./2017-01-27-07-22-31/model-2017-01-27-07-22-31.ckt')
 if __name__ == "__main__":
     main()
