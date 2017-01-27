@@ -161,8 +161,7 @@ class CNN():
         batch_num = []
         cost_batch = []
         val_acc_epoch = []
-        train_acc_epoch = []
-        acc = 0
+        #train_acc_epoch = []
         print("Training Begin...")
         for epoch_i in range(epochs):
             self.X_train_paths, self.y_train = shuffle(self.X_train_paths,self.y_train)
@@ -193,14 +192,14 @@ class CNN():
                 """
             valAcc = self.getValAccuracy(sess=sess)
             val_acc_epoch.append(valAcc)
-            trainAcc = self.getTrainAccuracy(sess=sess)
-            train_acc_epoch.append(trainAcc)
-            print("epoch {}, valAcc={}, trainAcc={}".format(epoch_i,valAcc,trainAcc))
-            history = {"val_acc_epoch":val_acc_epoch,"cost_batch":cost_batch, "train_acc_epoch":train_acc_epoch}
+            print("epoch {}, valAcc={}".format(epoch_i,valAcc))
+            history = {"val_acc_epoch":val_acc_epoch,"cost_batch":cost_batch}
             with open(self.log_dir+'/history.pickle', 'wb') as f:
                 pickle.dump(history, f, protocol=pickle.HIGHEST_PROTOCOL)
             save_path = saver.save(sess, self.log_dir+"/model.ckt")
             print("Model saved in file: %s" % save_path)
+        trainAcc = self.getTrainAccuracy(sess=sess)
+        print("Train Accuracy: {}".format(trainAcc))
         testAcc = self.getTestAccuracy(sess=sess)
         print("Test Accuracy: {}".format(testAcc))
 
