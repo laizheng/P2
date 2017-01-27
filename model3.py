@@ -122,16 +122,16 @@ class Model():
                            num_input_channels=16,
                            filter_size=3,
                            num_filters=24,
-                           strides=2,
+                           strides=1,
                            padding='SAME',
                            use_pooling=False)
-        self.dropout0 = tf.nn.dropout(self.layer_conv2, keep_prob=0.5)
+        self.dropout0 = tf.nn.dropout(self.layer_conv2, keep_prob=0.2)
         self.layer_conv3, self.weights_conv3 = \
             self.new_conv_layer(input=self.dropout0,
                            num_input_channels=24,
                            filter_size=3,
                            num_filters=36,
-                           strides=2,
+                           strides=1,
                            padding='SAME',
                            use_pooling=False)
         self.layer_conv4, self.weights_conv4 = \
@@ -142,13 +142,13 @@ class Model():
                            strides=2,
                            padding='SAME',
                            use_pooling=False)
-        self.dropout1 = tf.nn.dropout(self.layer_conv4, keep_prob=0.5)
+        self.dropout1 = tf.nn.dropout(self.layer_conv4, keep_prob=0.2)
         self.layer_conv5, self.weights_conv5 = \
             self.new_conv_layer(input=self.dropout1,
                                 num_input_channels=48,
                                 filter_size=3,
                                 num_filters=60,
-                                strides=1,
+                                strides=2,
                                 padding='SAME',
                                 use_pooling=False)
         self.layer_conv6, self.weights_conv6 = \
@@ -159,7 +159,7 @@ class Model():
                                 strides=2,
                                 padding='SAME',
                                 use_pooling=False)
-        self.dropout2 = tf.nn.dropout(self.layer_conv6, keep_prob=0.5)
+        self.dropout2 = tf.nn.dropout(self.layer_conv6, keep_prob=0.2)
         self.layer_flat, self.num_flat_features = self.flatten_layer(self.dropout2)
         self.layer_fc1, self.weights_fc1 = self.new_fc_layer(input=self.layer_flat,
                                  num_inputs=self.num_flat_features,
@@ -177,4 +177,4 @@ class Model():
         self.cost = tf.reduce_mean(self.cross_entropy)
         self.correct_prediction = tf.equal(self.y_pred, self.y_true)
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))
-        self.optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(self.cost)
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=5e-4).minimize(self.cost)
