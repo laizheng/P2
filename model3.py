@@ -125,15 +125,15 @@ class Model():
                            strides=2,
                            padding='SAME',
                            use_pooling=False)
+        self.dropout0 = tf.nn.dropout(self.layer_conv2, keep_prob=0.7)
         self.layer_conv3, self.weights_conv3 = \
-            self.new_conv_layer(input=self.layer_conv2,
+            self.new_conv_layer(input=self.dropout0,
                            num_input_channels=24,
                            filter_size=3,
                            num_filters=36,
                            strides=2,
                            padding='SAME',
                            use_pooling=False)
-        self.dropout1 = tf.nn.dropout(self.layer_conv3, keep_prob=0.7)
         self.layer_conv4, self.weights_conv4 = \
             self.new_conv_layer(input=self.layer_conv3,
                            num_input_channels=36,
@@ -142,8 +142,9 @@ class Model():
                            strides=2,
                            padding='SAME',
                            use_pooling=False)
+        self.dropout1 = tf.nn.dropout(self.layer_conv4, keep_prob=0.7)
         self.layer_conv5, self.weights_conv5 = \
-            self.new_conv_layer(input=self.layer_conv4,
+            self.new_conv_layer(input=self.dropout1,
                                 num_input_channels=48,
                                 filter_size=3,
                                 num_filters=60,
