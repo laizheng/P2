@@ -169,13 +169,12 @@ class CNN():
             gen = self.generate_from_directory(self.X_train_paths, self.y_train, batch_size=batch_size)
             batch_count = int(len(self.X_train_paths)/batch_size) + 1
             batches_pbar = tqdm(range(batch_count), \
-                                desc='Epoch {:>2}/{}'.format(epoch_i + 1, epochs),\
-                                postfix=acc)
+                                desc='Epoch {:>2}/{}'.format(epoch_i + 1, epochs))
             for batch_cnt in batches_pbar:
                 X, Y = next(gen)
                 # Run optimizer and get loss
-                _, l, acc = sess.run(
-                    [self.model.optimizer, self.model.cost, self.model.accuracy],
+                _, l = sess.run(
+                    [self.model.optimizer, self.model.cost],
                     feed_dict={self.model.X:X, self.model.Y_true:Y})
                 if not batch_cnt % log_batch_step:
                     previous_batch = batch_num[-1] if batch_num else 0
