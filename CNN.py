@@ -216,9 +216,9 @@ class CNN():
         test_acc_epoch = []
         print("Training Begin...")
         for epoch_i in range(epochs):
-            self.X_train_orig_pathspaths, self.y_train_orig = shuffle(self.X_train_orig_paths,self.y_train_orig)
-            gen = self.generate_from_directory(self.X_train_orig_pathspaths, self.y_train_orig, batch_size=batch_size)
-            batch_count = int(len(self.X_train_paths)/batch_size) + 1
+            self.X_train_orig_paths, self.y_train_orig = shuffle(self.X_train_orig_paths,self.y_train_orig)
+            gen = self.generate_from_directory(self.X_train_orig_paths, self.y_train_orig, batch_size=batch_size)
+            batch_count = int(len(self.X_train_orig_paths)/batch_size) + 1
             batches_pbar = tqdm(range(batch_count), \
                                 desc='Epoch {:>2}/{}'.format(epoch_i + 1, epochs))
             for batch_cnt in batches_pbar:
