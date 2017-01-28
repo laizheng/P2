@@ -16,7 +16,7 @@ from CNN import CNN
 
 def main():
     cnn = CNN(use_gray = True, use_jitter = False)
-    cnn.trainNoSplit(epochs=50,batch_size=256)
+    cnn.train(epochs=50,batch_size=256)
 if __name__ == "__main__":
     main()
 

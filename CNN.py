@@ -166,7 +166,7 @@ class CNN():
         batch_num = []
         cost_batch = []
         val_acc_epoch = []
-        #train_acc_epoch = []
+        train_acc_epoch = []
         print("Training Begin...")
         for epoch_i in range(epochs):
             self.X_train_paths, self.y_train = shuffle(self.X_train_paths,self.y_train)
@@ -195,6 +195,8 @@ class CNN():
                         or np.isnan(np.sum(wconvfc1)) or np.isnan(np.sum(wconvfc2)) or np.isnan(np.sum(Y_pred)):
                     raise ValueError("nan detected")
                 """
+            trainAcc = self.getTrainAccuracy(sess=sess)
+            train_acc_epoch.append(trainAcc)
             valAcc = self.getValAccuracy(sess=sess)
             val_acc_epoch.append(valAcc)
             history = {"val_acc_epoch":val_acc_epoch,"cost_batch":cost_batch}
