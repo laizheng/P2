@@ -33,6 +33,8 @@ class CNN():
         self.df_train = pd.read_csv("./train_data.csv", sep=",\s*", engine='python')
         self.df_jitter = pd.read_csv("./jitter_data.csv", sep=",\s*", engine='python')
         self.df_test = pd.read_csv("./test_data.csv", sep=",\s*",engine='python')
+        self.X_train_orig_paths = list(self.df_train['path'])
+        self.y_train_orig = list(self.df_train['y'])
         self.X_test_paths = list(self.df_test['path'])
         self.y_test = list(self.df_test['y'])
         self.encoder = LabelBinarizer()
@@ -202,6 +204,46 @@ class CNN():
         print("Train Accuracy: {}".format(trainAcc))
         testAcc = self.getTestAccuracy(sess=sess)
         print("Test Accuracy: {}".format(testAcc))
+
+    def trainNoSplit(self,epochs,batch_size):
+        sess = tf.Session()
+        sess.run(tf.global_variables_initializer())
+        saver = tf.train.Saver()
+        file_writer = tf.summary.FileWriter(self.log_dir, sess.graph)
+        log_batch_step = 10
+        batch_num = []
+        cost_batch = []
+        test_acc_epoch = []
+        print("Training Begin...")
+        for epoch_i in range(epochs):
+            self.X_train_orig_pathspaths, self.y_train_orig = shuffle(self.X_train_orig_paths,self.y_train_orig)
+            gen = self.generate_from_directory(self.X_train_orig_pathspaths, self.y_train_orig, batch_size=batch_size)
+            batch_count = int(len(self.X_train_paths)/batch_size) + 1
+            batches_pbar = tqdm(range(batch_count), \
+                                desc='Epoch {:>2}/{}'.format(epoch_i + 1, epochs))
+            for batch_cnt in batches_pbar:
+                X, Y = next(gen)
+                # Run optimizer and get loss
+                _, l = sess.run(
+                    [self.model.optimizer, self.model.cost],
+                    feed_dict={self.model.X:X, self.model.Y_true:Y})
+                if not batch_cnt % log_batch_step:
+                    previous_batch = batch_num[-1] if batch_num else 0
+                    batch_num.append(log_batch_step + previous_batch)
+                    cost_batch.append(l)
+            testAcc = self.getTestAccuracy(sess=sess)
+            test_acc_epoch.append(testAcc)
+            print("epoch {}, testAcc={}".format(epoch_i,testAcc))
+            history = {"test_acc_epoch":test_acc_epoch,"cost_batch":cost_batch}
+            with open(self.log_dir+'/history.pickle', 'wb') as f:
+                pickle.dump(history, f, protocol=pickle.HIGHEST_PROTOCOL)
+            save_path = saver.save(sess, self.log_dir+"/model.ckt")
+            print("Model saved in file: %s" % save_path)
+        trainAcc = self.getTrainAccuracy(sess=sess)
+        print("Train Accuracy: {}".format(trainAcc))
+        testAcc = self.getTestAccuracy(sess=sess)
+        print("Test Accuracy: {}".format(testAcc))
+
 
     def debug_tf(self):
         sess = tf.Session()
