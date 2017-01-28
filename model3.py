@@ -17,7 +17,6 @@ class Model():
         self.img_size = 32
         self.img_shape = (self.img_size, self.img_size)
         self.num_classes = 43
-        self.filter_size = 3
         self.input_shape = input_shape
         self.getModel()
 
@@ -131,7 +130,7 @@ class Model():
                            num_input_channels=24,
                            filter_size=3,
                            num_filters=36,
-                           strides=2,
+                           strides=1,
                            padding='SAME',
                            use_pooling=False)
         self.layer_conv4, self.weights_conv4 = \
@@ -159,8 +158,8 @@ class Model():
                                 strides=2,
                                 padding='SAME',
                                 use_pooling=False)
-        #self.dropout2 = tf.nn.dropout(self.layer_conv6, keep_prob=0.2)
-        self.layer_flat, self.num_flat_features = self.flatten_layer(self.layer_conv6)
+        self.dropout2 = tf.nn.dropout(self.layer_conv6, keep_prob=0.7)
+        self.layer_flat, self.num_flat_features = self.flatten_layer(self.dropout2)
         self.layer_fc1, self.weights_fc1 = self.new_fc_layer(input=self.layer_flat,
                                  num_inputs=self.num_flat_features,
                                  num_outputs=128,
