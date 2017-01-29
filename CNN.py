@@ -11,7 +11,7 @@ import shutil
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.cross_validation import train_test_split
 import pandas as pd
-from model3 import Model
+from model4 import Model
 from tqdm import tqdm
 from sklearn.utils import shuffle
 from time import localtime, strftime
