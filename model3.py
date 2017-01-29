@@ -171,6 +171,7 @@ class Model():
                                  use_relu=False)
         self.numeric_stable_out = self.layer_fc2-tf.reshape(tf.reduce_max(self.layer_fc2,axis=1), [-1,1])
         self.Y_pred = tf.nn.softmax(self.numeric_stable_out)
+        self.top_k = tf.nn.top_k(self.Y_pred, k=5, sorted=True, name=None)
         self.y_pred = tf.argmax(self.Y_pred, dimension=1)
         self.cross_entropy = -tf.reduce_sum(self.Y_true * tf.log(tf.clip_by_value(self.Y_pred,1e-10,1)), reduction_indices=1)
         self.cost = tf.reduce_mean(self.cross_entropy)

@@ -16,6 +16,9 @@ from CNN import CNN
 
 def main():
     cnn = CNN(use_gray = True, use_jitter = True)
+    #cnn.test_saved_model(model_path="./log/model.ckt")
+    #img = cv2.imread("./myimg/stop.jpeg")
+    #cnn.predict(img,"./log/model.ckt")
     cnn.train(epochs=50,batch_size=256)
 if __name__ == "__main__":
     main()

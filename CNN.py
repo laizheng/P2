@@ -15,6 +15,8 @@ from model3 import Model
 from tqdm import tqdm
 from sklearn.utils import shuffle
 from time import localtime, strftime
+from collections import Counter
+from sklearn.metrics import confusion_matrix
 #from tensorflow.python import debug as tf_debug
 
 class CNN():
@@ -44,7 +46,6 @@ class CNN():
         self.model = Model(input_shape=self.input_shape)
         t = strftime("%Y-%m-%d-%H-%M-%S", localtime())
         self.log_dir = "./" + t + '/'
-        os.mkdir(self.log_dir)
 
     def decode(self, Y):
         id = self.encoder.inverse_transform(np.array([Y]))
@@ -142,11 +143,16 @@ class CNN():
     def getTestAccuracy(self,sess):
         print("computing Test Acc..."),
         acc = []
+        y_true =[]
+        y_pred = []
         for X, Y in tqdm(self.generate_from_directory(self.X_test_paths,self.y_test,batch_size=32,break_if_finish=True), \
                          desc='Test Acc'):
             acc.append(sess.run(self.model.accuracy,feed_dict={self.model.X:X, self.model.Y_true:Y}))
+            y_true.extend(sess.run(self.model.y_true,feed_dict={self.model.X:X, self.model.Y_true:Y}))
+            y_pred.extend(sess.run(self.model.y_pred, feed_dict={self.model.X: X, self.model.Y_true: Y}))
+        df = pd.DataFrame({"path":self.X_test_paths, "y_true":y_true, "y_pred":y_pred})
         print("testAcc={}".format(np.mean(acc)))
-        return np.mean(acc)
+        return np.mean(acc), df
 
     def getTrainAccuracy(self,sess):
         print("computing Train Acc..."),
@@ -157,7 +163,22 @@ class CNN():
         print("trainAcc={}".format(np.mean(acc)))
         return np.mean(acc)
 
+    def getOrigTrainAccuracy(self,sess):
+        print("computing Train Acc(entire training set, no spliting)..."),
+        acc = []
+        y_true = []
+        y_pred = []
+        for X, Y in tqdm(self.generate_from_directory(self.X_train_orig_paths,self.y_train_orig,batch_size=32,break_if_finish=True), \
+                         desc='Train Acc'):
+            acc.append(sess.run(self.model.accuracy,feed_dict={self.model.X:X, self.model.Y_true:Y}))
+            y_true.extend(sess.run(self.model.y_true, feed_dict={self.model.X: X, self.model.Y_true: Y}))
+            y_pred.extend(sess.run(self.model.y_pred, feed_dict={self.model.X: X, self.model.Y_true: Y}))
+        df = pd.DataFrame({"path": self.X_train_orig_paths, "y_true": y_true, "y_pred": y_pred})
+        print("OrigTrainAcc={}".format(np.mean(acc)))
+        return np.mean(acc), df
+
     def train(self,epochs,batch_size):
+        os.mkdir(self.log_dir)
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
@@ -199,7 +220,7 @@ class CNN():
             train_acc_epoch.append(trainAcc)
             valAcc = self.getValAccuracy(sess=sess)
             val_acc_epoch.append(valAcc)
-            history = {"val_acc_epoch":val_acc_epoch,"cost_batch":cost_batch}
+            history = {"val_acc_epoch":val_acc_epoch,"val_acc_epoch":val_acc_epoch,"cost_batch":cost_batch}
             with open(self.log_dir+'/history.pickle', 'wb') as f:
                 pickle.dump(history, f, protocol=pickle.HIGHEST_PROTOCOL)
             save_path = saver.save(sess, self.log_dir+"/model.ckt")
@@ -208,6 +229,7 @@ class CNN():
         self.getTestAccuracy(sess=sess)
 
     def trainNoSplit(self,epochs,batch_size):
+        os.mkdir(self.log_dir)
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
@@ -236,7 +258,7 @@ class CNN():
                     cost_batch.append(l)
             testAcc = self.getTestAccuracy(sess=sess)
             test_acc_epoch.append(testAcc)
-            trainAcc = self.getTrainAccuracy(sess=sess)
+            trainAcc = self.getOrigTrainAccuracy(sess=sess)
             train_acc_epoch.append(trainAcc)
             history = {"test_acc_epoch":test_acc_epoch,"train_acc_epoch":train_acc_epoch, "cost_batch":cost_batch}
             with open(self.log_dir+'/history.pickle', 'wb') as f:
@@ -246,6 +268,35 @@ class CNN():
         self.getTrainAccuracy(sess=sess)
         self.getTestAccuracy(sess=sess)
 
+    def plot_five_images_per_track(self,df): # to be used in iPython
+        for id in np.unique(df['y']):
+            desc = self.labelDict[str(id)]
+            print(str(id) + ":" + desc)
+            pick = np.random.choice(df[df['y']==id]['path'],5)
+            fig, axes = plt.subplots(1, 5)
+            for j, ax in enumerate(axes.flat):
+                img = cv2.imread(pick[j])
+                ax.imshow(img)
+                ax.set_xticks([])
+                ax.set_yticks([])
+            plt.tight_layout()
+            plt.show()
+
+    def plot_error_examples(self,df): # to be used in iPython
+        df_error = df.iloc[np.where(df['y_pred']!=df['y_true'])]
+        for true_id in np.unique(df_error['y_true']):
+            pick = np.random.choice(df_error[df_error['y_true']==true_id].index,3)
+            title = "true:" + str(true_id) + "\n"
+            fig, axes = plt.subplots(1, 3)
+            for j, ax in enumerate(axes.flat):
+                img = cv2.imread(df.iloc[pick[j]]['path'])
+                pred_id = df.iloc[pick[j]]['y_pred']
+                ax.imshow(img)
+                ax.set_xticks([])
+                ax.set_yticks([])
+                ax.set_xlabel(title + "pred:" + str(pred_id))
+            plt.tight_layout()
+            plt.show()
 
     def debug_tf(self):
         sess = tf.Session()
@@ -259,12 +310,58 @@ class CNN():
                      feed_dict={self.model.X: X, self.model.Y_true: Y})
         pass
 
-    def test_saved_model(self,model_path):
+    def print_full(self, x):
+        pd.set_option('display.max_columns', 50)
+        print(x)
+        pd.reset_option('display.max_columns')
+
+    def test_saved_model(self,model_path, show_confusion = True):
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
         saver.restore(sess, model_path)
-        val_acc = self.getValAccuracy(sess)
-        print("Val Accuracy is: {}".format(val_acc))
-        test_acc = self.getTestAccuracy(sess)
-        print("Test Accuracy is: {}".format(test_acc))
+        train_acc, df_train_trained = self.getOrigTrainAccuracy(sess)
+        test_acc, df_test_trained = self.getTestAccuracy(sess)
+
+        if show_confusion:
+            cm = confusion_matrix(y_true=df_train_trained['y_true'], y_pred=df_train_trained['y_pred'])
+            print("training set confusion matrix")
+            self.print_full(pd.DataFrame(cm))
+            plt.figure(num=1, figsize=(12, 12))
+            plt.matshow(cm, fignum=1)
+            plt.colorbar()
+            tick_marks = np.arange(self.nb_classes)
+            plt.xticks(tick_marks, range(self.nb_classes))
+            plt.yticks(tick_marks, range(self.nb_classes))
+            plt.xlabel('Predicted')
+            plt.ylabel('True')
+            plt.title("Error in training set")
+            plt.show()
+
+            cm = confusion_matrix(y_true=df_test_trained['y_true'], y_pred=df_test_trained['y_pred'])
+            print("test set confusion matrix")
+            self.print_full(pd.DataFrame(cm))
+            plt.figure(num=1, figsize=(12, 12))
+            plt.matshow(cm, fignum=1)
+            plt.colorbar()
+            tick_marks = np.arange(self.nb_classes)
+            plt.xticks(tick_marks, range(self.nb_classes))
+            plt.yticks(tick_marks, range(self.nb_classes))
+            plt.xlabel('Predicted')
+            plt.ylabel('True')
+            plt.title("Error in test set")
+            plt.show()
+
+        return df_train_trained, df_test_trained
+
+    def predict(self,img, model_path):
+        processed_img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+        processed_img = cv2.resize(processed_img,(self.img_cols,self.img_rows))
+        processed_img = self.imgPreprocess(processed_img)
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+            saver = tf.train.Saver()
+            saver.restore(sess, model_path)
+            top_k = tf.nn.top_k(self.model.Y_pred, k=5, sorted=True, name=None)
+            pred = sess.run(top_k, feed_dict={self.model.X:[processed_img]})
+            return pred.values[0], pred.indices[0]
