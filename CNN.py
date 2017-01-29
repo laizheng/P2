@@ -220,7 +220,7 @@ class CNN():
             train_acc_epoch.append(trainAcc)
             valAcc = self.getValAccuracy(sess=sess)
             val_acc_epoch.append(valAcc)
-            history = {"val_acc_epoch":val_acc_epoch,"val_acc_epoch":val_acc_epoch,"cost_batch":cost_batch}
+            history = {"val_acc_epoch":val_acc_epoch,"train_acc_epoch":train_acc_epoch,"cost_batch":cost_batch}
             with open(self.log_dir+'/history.pickle', 'wb') as f:
                 pickle.dump(history, f, protocol=pickle.HIGHEST_PROTOCOL)
             save_path = saver.save(sess, self.log_dir+"/model.ckt")
