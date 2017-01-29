@@ -141,9 +141,9 @@ class Model():
                            strides=2,
                            padding='SAME',
                            use_pooling=False)
-        self.dropout1 = tf.nn.dropout(self.layer_conv4, keep_prob=0.7)
+        #self.dropout1 = tf.nn.dropout(self.layer_conv4, keep_prob=0.7)
         self.layer_conv5, self.weights_conv5 = \
-            self.new_conv_layer(input=self.dropout1,
+            self.new_conv_layer(input=self.layer_conv4,
                                 num_input_channels=48,
                                 filter_size=3,
                                 num_filters=60,
