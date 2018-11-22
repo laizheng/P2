@@ -9,7 +9,7 @@ import random
 import os
 import shutil
 from sklearn.preprocessing import LabelBinarizer
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 import pandas as pd
 from model4 import Model
 from tqdm import tqdm

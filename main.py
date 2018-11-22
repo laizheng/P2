@@ -7,7 +7,7 @@ import matplotlib.gridspec as gridspec
 import csv
 import random
 from sklearn.preprocessing import LabelBinarizer
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 #from classifer import CNN
 #from CNN_keras import CNN
 #from CNN_keras_debug import CNN
@@ -22,7 +22,3 @@ def main():
     cnn.train(epochs=50,batch_size=256)
 if __name__ == "__main__":
     main()
-
-
-
-
